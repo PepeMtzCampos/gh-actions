@@ -1,5 +1,5 @@
 # Define the repositories and environments
-$REPOS = @("PepeMtzCampos/gh_actions", "PepeMtzCampos/gh-executionflow", "PepeMtzCampos/gh-events", "PepeMtzCampos/gh-first-action")
+$REPOS = @("PepeMtzCampos/gh-actions", "PepeMtzCampos/gh-executionflow", "PepeMtzCampos/gh-events", "PepeMtzCampos/gh-first-action")
 $ENVIRONMENTS = @("dev", "test", "prod")
 
 # Define repository-level variables
