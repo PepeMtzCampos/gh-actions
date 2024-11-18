@@ -1,6 +1,5 @@
 # Define the repositories and environments
-$OTHER_REPOS = @("PepeMtzCampos/gh-executionflow", "PepeMtzCampos/gh-events", "PepeMtzCampos/gh-first-action")
-$REPOS = @("PepeMtzCampos/gh-actions")
+$REPOS = @("PepeMtzCampos/gh_actions", "PepeMtzCampos/gh-executionflow", "PepeMtzCampos/gh-events", "PepeMtzCampos/gh-first-action")
 $ENVIRONMENTS = @("dev", "test", "prod")
 
 # Define repository-level variables
@@ -48,14 +47,15 @@ $API_HEADER_FORMAT = "Accept: application/vnd.github+json"
 foreach ($REPO in $REPOS) {
 
   Write-Output ""
-  # Verify access to the repository by reading the last commit
-#   try {
-#       Write-Output "Verifying access to repository $REPO by reading the last commit"
-#       $lastCommit = gh api "repos/$REPO/commits" | ConvertFrom-Json | Select-Object -First 1
-#       Write-Output "Last commit in repository ${REPO}: $($lastCommit.commit.message)"
-#   } catch {
-#     Write-Output "Failed to access repository $REPO"
-#   }
+  # Verify access to the repository by listing the workflow permissions
+    try {
+        Write-Output "Verifying access to repository $REPO by listing the workflow permissions"
+        $permissions = gh api -H ${API_HEADER_FORMAT} -H ${API_HEADER_VERSION} "/repos/$REPO/actions/permissions/workflow" | ConvertFrom-Json
+        Write-Output "Workflow permissions in ${REPO}:"
+        $permissions | ForEach-Object { Write-Output "$($_.name): $($_.value)" }
+    } catch {
+        Write-Output "Failed to access workflow permissions in repository $REPO"
+    }
 
   Write-Output ""
   # Verify access to the repository by listing the repository variables
