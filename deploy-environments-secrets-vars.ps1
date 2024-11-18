@@ -4,8 +4,8 @@ $ENVIRONMENTS = @("dev", "test", "prod")
 
 # Define repository-level variables
 $REPO_VARS = @{
-  "CODE_VERSION" = "1.8.0.x"
-  "ARTIFACTORY_URL" = "artifactory.pm.com"
+  "CODE_VERSION" = "Z.Y.0.x"
+  "ARTIFACTORY_URL" = "artRifactory.pm.com"
 }
 
 # Define environment variables and secrets for each environment
@@ -50,7 +50,10 @@ foreach ($REPO in $REPOS) {
   $FOLDER_SUFFIX = $REPO -replace 'PepeMtzCampos/gh-', ''
 
   Write-Output ""
+  Write-Output "REPO: $REPO"
+  Write-Output ""
   # Set or update repository-level variables
+  # https://docs.github.com/en/rest/actions/variables?apiVersion=2022-11-28#create-a-repository-variable
   foreach ($name in $REPO_VARS.Keys) {
     $value = $REPO_VARS[$name]
     try {
@@ -91,6 +94,8 @@ foreach ($REPO in $REPOS) {
 
     #https://docs.github.com/en/rest/deployments/environments?apiVersion=2022-11-28#create-or-update-an-environment
     Write-Output ""
+    Write-Output "REPO: $REPO ENVIRONMENT: $ENVIRONMENT"
+    Write-Output ""
     # Create environment if it doesn't exist with default values
     try {
         Write-Output "Checking if environment $ENVIRONMENT exists in repository $REPO"
@@ -110,6 +115,7 @@ foreach ($REPO in $REPOS) {
 
     Write-Output ""
     # Set or update environmental variables
+    # https://docs.github.com/en/rest/actions/variables?apiVersion=2022-11-28#create-an-environment-variable
     foreach ($name in $ENV_VARS[$ENVIRONMENT].Keys) {
       $value = $ENV_VARS[$ENVIRONMENT][$name]
       try {
@@ -131,6 +137,7 @@ foreach ($REPO in $REPOS) {
 
     Write-Output ""
     # Set or update environmental secrets
+    # https://docs.github.com/en/rest/actions/secrets?apiVersion=2022-11-28#create-or-update-an-environment-secret
     foreach ($name in $SECRETS[$ENVIRONMENT].Keys) {
       $value = $SECRETS[$ENVIRONMENT][$name]
       try {
