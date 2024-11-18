@@ -84,18 +84,26 @@ foreach ($REPO in $REPOS) {
     Write-Output "Failed to check or set variable FOLDER_SUFFIX in repository $REPO"
   }
 
-  Write-Output ""
-  # Verify access to the repository by listing the environments
-    try {
-        Write-Output "Verifying access to repository $REPO by listing the environments"
-        $response = gh api -H ${API_HEADER_FORMAT} -H ${API_HEADER_VERSION} "/repos/$REPO/environments" | ConvertFrom-Json
-        Write-Output "Environments in ${REPO}:"
-        $response.environments | ForEach-Object { Write-Output "$($_.name)" }
-    } catch {
-        Write-Output "Failed to access repository $REPO"
-    }
 
   foreach ($ENVIRONMENT in $ENVIRONMENTS) {
+
+    #https://docs.github.com/en/rest/deployments/environments?apiVersion=2022-11-28#create-or-update-an-environment
+    Write-Output ""
+    # Create environment if it doesn't exist with default values
+    try {
+        Write-Output "Checking if environment $ENVIRONMENT exists in repository $REPO"
+        $existingEnv = gh api -H ${API_HEADER_FORMAT} -H ${API_HEADER_VERSION} "/repos/$REPO/environments/$ENVIRONMENT" | ConvertFrom-Json
+        if (-not $existingEnv) {
+            Write-Output "Creating environment $ENVIRONMENT with default values in repository $REPO"
+            gh api --method PUT -H ${API_HEADER_FORMAT} -H ${API_HEADER_VERSION} "/repos/$REPO/environments/$ENVIRONMENT" #-F "wait_timer=30" -F "prevent_self_review=false" -f "reviewers[][type]=User" -F "reviewers[][id]=1" -f "reviewers[][type]=Team" -F "reviewers[][id]=1" -F "deployment_branch_policy[protected_branches]=false" -F "deployment_branch_policy[custom_branch_policies]=true"
+        } else {
+            Write-Output "Environment $ENVIRONMENT already exists in $REPO"
+        }
+    } catch {
+        Write-Output "Failed to check or create environment $ENVIRONMENT in repository $REPO"
+        continue #go to next environment
+    }
+
 
     Write-Output ""
     # Set or update environmental variables
