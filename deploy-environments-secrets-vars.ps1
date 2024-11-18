@@ -57,10 +57,10 @@ foreach ($REPO in $REPOS) {
       Write-Output "Checking if variable $name exists in repository $REPO"
       $existingVar = gh api -H ${API_HEADER_FORMAT} -H ${API_HEADER_VERSION} "repos/$REPO/actions/variables/$name" | ConvertFrom-Json
       Write-Output "Response: $existingVar"
-      if ($existingVar -and $existingVar.value -ne $value) {
+      if ($existingVar.status -ne 404 -and $existingVar.value -ne $value) {
         Write-Output "Updating variable $name with value $value in repository $REPO"
         gh api -X PATCH -H ${API_HEADER_FORMAT} -H ${API_HEADER_VERSION} "repos/$REPO/actions/variables/$name" -f value="$value"
-      } elseif (-not $existingVar) {
+      } elseif ($existingVar.status -eq 404) {
         Write-Output "Setting variable $name with value $value in repository $REPO"
         gh api -X POST -H ${API_HEADER_FORMAT} -H ${API_HEADER_VERSION} "repos/$REPO/actions/variables" -f name="$name" -f value="$value"
       }
@@ -75,10 +75,10 @@ foreach ($REPO in $REPOS) {
     Write-Output "Checking if variable FOLDER_SUFFIX exists in repository $REPO"
     $existingVar = gh api -H ${API_HEADER_FORMAT} -H ${API_HEADER_VERSION} "repos/$REPO/actions/variables/FOLDER_SUFFIX" | ConvertFrom-Json
     Write-Output "Response: $existingVar"
-    if ($existingVar -and $existingVar.value -ne $FOLDER_SUFFIX) {
+    if ($existingVar.status -ne 404  -and $existingVar.value -ne $FOLDER_SUFFIX) {
       Write-Output "Updating variable FOLDER_SUFFIX with value $FOLDER_SUFFIX in repository $REPO"
       gh api -X PATCH -H ${API_HEADER_FORMAT} -H ${API_HEADER_VERSION} "repos/$REPO/actions/variables/FOLDER_SUFFIX" -f value="$FOLDER_SUFFIX"
-    } elseif (-not $existingVar) {
+    } elseif ($existingVar.status -eq 404) {
       Write-Output "Setting variable FOLDER_SUFFIX with value $FOLDER_SUFFIX in repository $REPO"
       gh api -X POST -H ${API_HEADER_FORMAT} -H ${API_HEADER_VERSION} "repos/$REPO/actions/variables" -f name="FOLDER_SUFFIX" -f value="$FOLDER_SUFFIX"
     }
@@ -96,7 +96,7 @@ foreach ($REPO in $REPOS) {
         Write-Output "Checking if environment $ENVIRONMENT exists in repository $REPO"
         $existingEnv = gh api -H ${API_HEADER_FORMAT} -H ${API_HEADER_VERSION} "/repos/$REPO/environments/$ENVIRONMENT" | ConvertFrom-Json
         Write-Output "Response: $existingEnv"
-        if (-not $existingEnv) {
+        if ($existingEnv.status -eq 404) {
             Write-Output "Creating environment $ENVIRONMENT with default values in repository $REPO"
             gh api --method PUT -H ${API_HEADER_FORMAT} -H ${API_HEADER_VERSION} "/repos/$REPO/environments/$ENVIRONMENT" #-F "wait_timer=30" -F "prevent_self_review=false" -f "reviewers[][type]=User" -F "reviewers[][id]=1" -f "reviewers[][type]=Team" -F "reviewers[][id]=1" -F "deployment_branch_policy[protected_branches]=false" -F "deployment_branch_policy[custom_branch_policies]=true"
         } else {
@@ -116,10 +116,10 @@ foreach ($REPO in $REPOS) {
         Write-Output "Checking if variable $name exists in environment $ENVIRONMENT of repository $REPO"
         $existingVar = gh api -H ${API_HEADER_FORMAT} -H ${API_HEADER_VERSION} "repos/$REPO/environments/$ENVIRONMENT/variables/$name" | ConvertFrom-Json
         Write-Output "Response: $existingVar"
-        if ($existingVar -and $existingVar.value -ne $value) {
+        if ($existingVar.status -ne 404 -and $existingVar.value -ne $value) {
           Write-Output "Updating variable $name with value $value in environment $ENVIRONMENT of repository $REPO"
           gh api -X PATCH -H ${API_HEADER_FORMAT} -H ${API_HEADER_VERSION} "repos/$REPO/environments/$ENVIRONMENT/variables/$name" -f value="$value"
-        } elseif (-not $existingVar) {
+        } elseif ($existingVar.status -eq 404) {
           Write-Output "Setting variable $name with value $value in environment $ENVIRONMENT of repository $REPO"
           gh api -X POST -H ${API_HEADER_FORMAT} -H ${API_HEADER_VERSION} "repos/$REPO/environments/$ENVIRONMENT/variables" -f name="$name" -f value="$value"
         }
@@ -137,10 +137,10 @@ foreach ($REPO in $REPOS) {
         Write-Output "Checking if secret $name exists in environment $ENVIRONMENT of repository $REPO"
         $existingSecret = gh api -H ${API_HEADER_FORMAT} -H ${API_HEADER_VERSION} "repos/$REPO/environments/$ENVIRONMENT/secrets/$name" | ConvertFrom-Json
         Write-Output "Response: $existingVar"
-        if ($existingSecret -and $existingSecret.value -ne $value) {
+        if ($existingSecret.status -ne 404  -and $existingSecret.value -ne $value) {
           Write-Output "Updating secret $name in environment $ENVIRONMENT of repository $REPO"
           $value | gh secret set $name --repo $REPO --env $ENVIRONMENT --update
-        } elseif (-not $existingSecret) {
+        } elseif ($existingSecret.status -eq 404) {
           Write-Output "Setting secret $name in environment $ENVIRONMENT of repository $REPO"
           $value | gh secret set $name --repo $REPO --env $ENVIRONMENT
         }
