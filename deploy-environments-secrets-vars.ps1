@@ -46,17 +46,6 @@ $API_HEADER_FORMAT = "Accept: application/vnd.github+json"
 
 foreach ($REPO in $REPOS) {
 
-  Write-Output ""
-  # Verify access to the repository by listing the repository variables
-  try {
-      Write-Output "Verifying access to repository ${REPO} by listing the repository variables"
-      $variables = gh api -H ${API_HEADER_FORMAT} -H ${API_HEADER_VERSION} "/repos/${REPO}/actions/variables" | ConvertFrom-Json
-      Write-Output "Repository variables in ${REPO}:"
-      $variables.variables | ForEach-Object { Write-Output "$($_.name): $($_.value)" }
-    } catch {
-      Write-Output "Failed to access repository ${REPO}"
-    }
-
   # Extract FOLDER_SUFFIX from repository name
   $FOLDER_SUFFIX = $REPO -replace 'PepeMtzCampos/gh-', ''
 
@@ -65,22 +54,34 @@ foreach ($REPO in $REPOS) {
   foreach ($name in $REPO_VARS.Keys) {
     $value = $REPO_VARS[$name]
     try {
-      Write-Output "Setting variable $name with value $value in repository $REPO"
-      gh api -X POST -H ${API_HEADER_FORMAT} -H ${API_HEADER_VERSION} "repos/$REPO/actions/variables" -f name="$name" -f value="$value"
+      Write-Output "Checking if variable $name exists in repository $REPO"
+      $existingVar = gh api -H ${API_HEADER_FORMAT} -H ${API_HEADER_VERSION} "repos/$REPO/actions/variables/$name" | ConvertFrom-Json
+      if ($existingVar -and $existingVar.value -ne $value) {
+        Write-Output "Updating variable $name with value $value in repository $REPO"
+        gh api -X PATCH -H ${API_HEADER_FORMAT} -H ${API_HEADER_VERSION} "repos/$REPO/actions/variables/$name" -f value="$value"
+      } elseif (-not $existingVar) {
+        Write-Output "Setting variable $name with value $value in repository $REPO"
+        gh api -X POST -H ${API_HEADER_FORMAT} -H ${API_HEADER_VERSION} "repos/$REPO/actions/variables" -f name="$name" -f value="$value"
+      }
     } catch {
-      Write-Output "Updating variable $name with value $value in repository $REPO"
-      gh api -X PATCH -H ${API_HEADER_FORMAT} -H ${API_HEADER_VERSION} "repos/$REPO/actions/variables/$name" -f value="$value"
+      Write-Output "Failed to check or set variable $name in repository $REPO"
     }
   }
 
   Write-Output ""
   # Set or update FOLDER_SUFFIX variable
   try {
-    Write-Output "Setting variable FOLDER_SUFFIX with value $FOLDER_SUFFIX in repository $REPO"
-    gh api -X POST -H ${API_HEADER_FORMAT} -H ${API_HEADER_VERSION} "repos/$REPO/actions/variables" -f name="FOLDER_SUFFIX" -f value="$FOLDER_SUFFIX"
+    Write-Output "Checking if variable FOLDER_SUFFIX exists in repository $REPO"
+    $existingVar = gh api -H ${API_HEADER_FORMAT} -H ${API_HEADER_VERSION} "repos/$REPO/actions/variables/FOLDER_SUFFIX" | ConvertFrom-Json
+    if ($existingVar -and $existingVar.value -ne $FOLDER_SUFFIX) {
+      Write-Output "Updating variable FOLDER_SUFFIX with value $FOLDER_SUFFIX in repository $REPO"
+      gh api -X PATCH -H ${API_HEADER_FORMAT} -H ${API_HEADER_VERSION} "repos/$REPO/actions/variables/FOLDER_SUFFIX" -f value="$FOLDER_SUFFIX"
+    } elseif (-not $existingVar) {
+      Write-Output "Setting variable FOLDER_SUFFIX with value $FOLDER_SUFFIX in repository $REPO"
+      gh api -X POST -H ${API_HEADER_FORMAT} -H ${API_HEADER_VERSION} "repos/$REPO/actions/variables" -f name="FOLDER_SUFFIX" -f value="$FOLDER_SUFFIX"
+    }
   } catch {
-    Write-Output "Updating variable FOLDER_SUFFIX with value $FOLDER_SUFFIX in repository $REPO"
-    gh api -X PATCH -H ${API_HEADER_FORMAT} -H ${API_HEADER_VERSION} "repos/$REPO/actions/variables/FOLDER_SUFFIX" -f value="$FOLDER_SUFFIX"
+    Write-Output "Failed to check or set variable FOLDER_SUFFIX in repository $REPO"
   }
 
   Write-Output ""
@@ -95,60 +96,43 @@ foreach ($REPO in $REPOS) {
     }
 
   foreach ($ENVIRONMENT in $ENVIRONMENTS) {
-    Write-Output ""
-    # Create environment if it doesn't exist
-    try {
-      Write-Output "Create environment $ENVIRONMENT if it doesn't exist"
-      gh api -X POST -H ${API_HEADER_FORMAT} -H ${API_HEADER_VERSION} "repos/$REPO/environments/$ENVIRONMENT"
-    } catch {
-      Write-Output "Environment $ENVIRONMENT already exists in $REPO"
-    }
 
     Write-Output ""
-    # Verify access to the repository by listing the environment variables
-    try {
-      Write-Output "Verifying access to repository $REPO environment $ENVIRONMENT by listing the environment variables"
-      $envVars = gh api -H ${API_HEADER_FORMAT} -H ${API_HEADER_VERSION} "/repos/$REPO/environments/$ENVIRONMENT/variables" | ConvertFrom-Json
-      Write-Output "Environment variables in $REPO environment ${ENVIRONMENT}:"
-      $envVars.variables | ForEach-Object { Write-Output "$($_.name): $($_.value)" }
-    } catch {
-      Write-Output "Failed to access environment variables in repository $REPO environment $ENVIRONMENT"
-    }
-
-    Write-Output ""
-    # Set or update environment variables
+    # Set or update environmental variables
     foreach ($name in $ENV_VARS[$ENVIRONMENT].Keys) {
       $value = $ENV_VARS[$ENVIRONMENT][$name]
       try {
-        Write-Output "Setting variable $name with value $value in repository $REPO"
-        gh api -X POST -H ${API_HEADER_FORMAT} -H ${API_HEADER_VERSION} "repos/$REPO/environments/$ENVIRONMENT/variables" -f name="$name" -f value="$value"
+        Write-Output "Checking if variable $name exists in environment $ENVIRONMENT of repository $REPO"
+        $existingVar = gh api -H ${API_HEADER_FORMAT} -H ${API_HEADER_VERSION} "repos/$REPO/environments/$ENVIRONMENT/variables/$name" | ConvertFrom-Json
+        if ($existingVar -and $existingVar.value -ne $value) {
+          Write-Output "Updating variable $name with value $value in environment $ENVIRONMENT of repository $REPO"
+          gh api -X PATCH -H ${API_HEADER_FORMAT} -H ${API_HEADER_VERSION} "repos/$REPO/environments/$ENVIRONMENT/variables/$name" -f value="$value"
+        } elseif (-not $existingVar) {
+          Write-Output "Setting variable $name with value $value in environment $ENVIRONMENT of repository $REPO"
+          gh api -X POST -H ${API_HEADER_FORMAT} -H ${API_HEADER_VERSION} "repos/$REPO/environments/$ENVIRONMENT/variables" -f name="$name" -f value="$value"
+        }
       } catch {
-        Write-Output "Updating variable $name with value $value in repository $REPO"
-        gh api -X PATCH -H ${API_HEADER_FORMAT} -H ${API_HEADER_VERSION} "repos/$REPO/environments/$ENVIRONMENT/variables/$name" -f value="$value"
+        Write-Output "Failed to check or set variable $name in environment $ENVIRONMENT of repository $REPO"
       }
     }
 
-    Write-Output ""
-    # Verify access to the repository by listing the environment secrets
-    try {
-        Write-Output "Verifying access to repository $REPO environment $ENVIRONMENT by listing the environment secrets"
-        $envSecrets = gh api -H ${API_HEADER_FORMAT} -H ${API_HEADER_VERSION} "/repos/$REPO/environments/$ENVIRONMENT/secrets" | ConvertFrom-Json
-        Write-Output "Environment secrets in $REPO environment ${ENVIRONMENT}:"
-        $envSecrets.secrets | ForEach-Object { Write-Output "$($_.name)" }
-    } catch {
-        Write-Output "Failed to access environment secrets in repository $REPO environment $ENVIRONMENT"
-    }
 
     Write-Output ""
-    # Set or update secrets
+    # Set or update environmental secrets
     foreach ($name in $SECRETS[$ENVIRONMENT].Keys) {
       $value = $SECRETS[$ENVIRONMENT][$name]
       try {
-        Write-Output "Setting secret $name in repository $REPO environment $ENVIRONMENT"
-        $value | gh secret set $name --repo $REPO --env $ENVIRONMENT
+        Write-Output "Checking if secret $name exists in environment $ENVIRONMENT of repository $REPO"
+        $existingSecret = gh api -H ${API_HEADER_FORMAT} -H ${API_HEADER_VERSION} "repos/$REPO/environments/$ENVIRONMENT/secrets/$name" | ConvertFrom-Json
+        if ($existingSecret -and $existingSecret.value -ne $value) {
+          Write-Output "Updating secret $name in environment $ENVIRONMENT of repository $REPO"
+          $value | gh secret set $name --repo $REPO --env $ENVIRONMENT --update
+        } elseif (-not $existingSecret) {
+          Write-Output "Setting secret $name in environment $ENVIRONMENT of repository $REPO"
+          $value | gh secret set $name --repo $REPO --env $ENVIRONMENT
+        }
       } catch {
-        Write-Output "Updating secret $name in repository $REPO environment $ENVIRONMENT"
-        $value | gh secret set $name --repo $REPO --env $ENVIRONMENT --update
+        Write-Output "Failed to check or set secret $name in environment $ENVIRONMENT of repository $REPO"
       }
     }
   }
