@@ -49,22 +49,27 @@ foreach ($REPO in $REPOS) {
   foreach ($name in $REPO_VARS.Keys) {
     $value = $REPO_VARS[$name]
     try {
+      Write-Output "Setting variable $name with value $value in repository $REPO"
       gh api -X POST "repos/$REPO/variables" -f name="$name" -f value="$value"
     } catch {
+      Write-Output "Updating variable $name with value $value in repository $REPO"
       gh api -X PATCH "repos/$REPO/variables/$name" -f value="$value"
     }
   }
 
   # Set or update FOLDER_SUFFIX variable
   try {
+    Write-Output "Setting variable FOLDER_SUFFIX with value $FOLDER_SUFFIX in repository $REPO"
     gh api -X POST "repos/$REPO/variables" -f name="FOLDER_SUFFIX" -f value="$FOLDER_SUFFIX"
   } catch {
+    Write-Output "Updating variable FOLDER_SUFFIX with value $FOLDER_SUFFIX in repository $REPO"
     gh api -X PATCH "repos/$REPO/variables/FOLDER_SUFFIX" -f value="$FOLDER_SUFFIX"
   }
 
   foreach ($ENVIRONMENT in $ENVIRONMENTS) {
     # Create environment if it doesn't exist
     try {
+      Write-Output "Create environment $ENVIRONMENT if it doesn't exist"
       gh api -X POST "repos/$REPO/environments/$ENVIRONMENT"
     } catch {
       Write-Output "Environment $ENVIRONMENT already exists in $REPO"
@@ -74,8 +79,10 @@ foreach ($REPO in $REPOS) {
     foreach ($name in $ENV_VARS[$ENVIRONMENT].Keys) {
       $value = $ENV_VARS[$ENVIRONMENT][$name]
       try {
+        Write-Output "Setting variable $name with value $value in repository $REPO"
         gh api -X POST "repos/$REPO/environments/$ENVIRONMENT/variables" -f name="$name" -f value="$value"
       } catch {
+        Write-Output "Updating variable $name with value $value in repository $REPO"
         gh api -X PATCH "repos/$REPO/environments/$ENVIRONMENT/variables/$name" -f value="$value"
       }
     }
@@ -84,8 +91,10 @@ foreach ($REPO in $REPOS) {
     foreach ($name in $SECRETS[$ENVIRONMENT].Keys) {
       $value = $SECRETS[$ENVIRONMENT][$name]
       try {
+        Write-Output "Setting secret $name in repository $REPO environment $ENVIRONMENT"
         $value | gh secret set $name --repo $REPO --env $ENVIRONMENT
       } catch {
+        Write-Output "Updating secret $name in repository $REPO environment $ENVIRONMENT"
         $value | gh secret set $name --repo $REPO --env $ENVIRONMENT --update
       }
     }
