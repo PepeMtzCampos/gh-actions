@@ -43,18 +43,31 @@ $SECRETS = @{
 
 foreach ($REPO in $REPOS) {
 
+  Write-Output ""
   # Verify access to the repository by reading the last commit
+#   try {
+#       Write-Output "Verifying access to repository $REPO by reading the last commit"
+#       $lastCommit = gh api "repos/$REPO/commits" | ConvertFrom-Json | Select-Object -First 1
+#       Write-Output "Last commit in repository ${REPO}: $($lastCommit.commit.message)"
+#   } catch {
+#     Write-Output "Failed to access repository $REPO"
+#   }
+
+  Write-Output ""
+  # Verify access to the repository by listing the repository variables
   try {
-      Write-Output "Verifying access to repository $REPO by reading the last commit"
-      $lastCommit = gh api "repos/$REPO/commits" | ConvertFrom-Json | Select-Object -First 1
-      Write-Output "Last commit in repository ${REPO}: $($lastCommit.commit.message)"
-  } catch {
-    Write-Output "Failed to access repository $REPO"
-  }
+      Write-Output "Verifying access to repository ${REPO} by listing the repository variables"
+      $variables = gh api -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" "/repos/${REPO}/actions/variables" | ConvertFrom-Json
+      Write-Output "Repository variables in ${REPO}:"
+      $variables.variables | ForEach-Object { Write-Output "$($_.name): $($_.value)" }
+    } catch {
+      Write-Output "Failed to access repository ${REPO}"
+    }
 
   # Extract FOLDER_SUFFIX from repository name
   $FOLDER_SUFFIX = $REPO -replace 'PepeMtzCampos/gh-', ''
 
+  Write-Output ""
   # Set or update repository-level variables
   foreach ($name in $REPO_VARS.Keys) {
     $value = $REPO_VARS[$name]
@@ -67,6 +80,7 @@ foreach ($REPO in $REPOS) {
     }
   }
 
+  Write-Output ""
   # Set or update FOLDER_SUFFIX variable
   try {
     Write-Output "Setting variable FOLDER_SUFFIX with value $FOLDER_SUFFIX in repository $REPO"
@@ -76,7 +90,19 @@ foreach ($REPO in $REPOS) {
     gh api -X PATCH "repos/$REPO/variables/FOLDER_SUFFIX" -f value="$FOLDER_SUFFIX"
   }
 
+  Write-Output ""
+  # Verify access to the repository by listing the environments
+    try {
+        Write-Output "Verifying access to repository $REPO by listing the environments"
+        $environments = gh api -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" "/repos/$REPO/environments" | ConvertFrom-Json
+        Write-Output "Environments in ${REPO}:"
+        $environments.environments | ForEach-Object { Write-Output "$($_.name)" }
+    } catch {
+        Write-Output "Failed to access repository $REPO"
+    }
+
   foreach ($ENVIRONMENT in $ENVIRONMENTS) {
+    Write-Output ""
     # Create environment if it doesn't exist
     try {
       Write-Output "Create environment $ENVIRONMENT if it doesn't exist"
@@ -85,6 +111,18 @@ foreach ($REPO in $REPOS) {
       Write-Output "Environment $ENVIRONMENT already exists in $REPO"
     }
 
+    Write-Output ""
+    # Verify access to the repository by listing the environment variables
+    try {
+      Write-Output "Verifying access to repository $REPO environment $ENVIRONMENT by listing the environment variables"
+      $envVars = gh api -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" "/repos/$REPO/environments/$ENVIRONMENT/variables" | ConvertFrom-Json
+      Write-Output "Environment variables in $REPO environment ${ENVIRONMENT}:"
+      $envVars.variables | ForEach-Object { Write-Output "$($_.name): $($_.value)" }
+    } catch {
+      Write-Output "Failed to access environment variables in repository $REPO environment $ENVIRONMENT"
+    }
+
+    Write-Output ""
     # Set or update environment variables
     foreach ($name in $ENV_VARS[$ENVIRONMENT].Keys) {
       $value = $ENV_VARS[$ENVIRONMENT][$name]
@@ -97,6 +135,18 @@ foreach ($REPO in $REPOS) {
       }
     }
 
+    Write-Output ""
+    # Verify access to the repository by listing the environment secrets
+    try {
+        Write-Output "Verifying access to repository $REPO environment $ENVIRONMENT by listing the environment secrets"
+        $envSecrets = gh api -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" "/repos/$REPO/environments/$ENVIRONMENT/secrets" | ConvertFrom-Json
+        Write-Output "Environment secrets in $REPO environment ${ENVIRONMENT}:"
+        $envSecrets.secrets | ForEach-Object { Write-Output "$($_.name)" }
+    } catch {
+        Write-Output "Failed to access environment secrets in repository $REPO environment $ENVIRONMENT"
+    }
+
+    Write-Output ""
     # Set or update secrets
     foreach ($name in $SECRETS[$ENVIRONMENT].Keys) {
       $value = $SECRETS[$ENVIRONMENT][$name]
