@@ -47,17 +47,6 @@ $API_HEADER_FORMAT = "Accept: application/vnd.github+json"
 foreach ($REPO in $REPOS) {
 
   Write-Output ""
-  # Verify access to the repository by listing the workflow permissions
-    try {
-        Write-Output "Verifying access to repository $REPO by listing the workflow permissions"
-        $permissions = gh api -H ${API_HEADER_FORMAT} -H ${API_HEADER_VERSION} "/repos/$REPO/actions/permissions/workflow" | ConvertFrom-Json
-        Write-Output "Workflow permissions in ${REPO}:"
-        $permissions | ForEach-Object { Write-Output "$($_.name): $($_.value)" }
-    } catch {
-        Write-Output "Failed to access workflow permissions in repository $REPO"
-    }
-
-  Write-Output ""
   # Verify access to the repository by listing the repository variables
   try {
       Write-Output "Verifying access to repository ${REPO} by listing the repository variables"
@@ -77,10 +66,10 @@ foreach ($REPO in $REPOS) {
     $value = $REPO_VARS[$name]
     try {
       Write-Output "Setting variable $name with value $value in repository $REPO"
-      gh api -X POST -H ${API_HEADER_FORMAT} -H ${API_HEADER_VERSION} "repos/$REPO/variables" -f name="$name" -f value="$value"
+      gh api -X POST -H ${API_HEADER_FORMAT} -H ${API_HEADER_VERSION} "repos/$REPO/actions/variables" -f name="$name" -f value="$value"
     } catch {
       Write-Output "Updating variable $name with value $value in repository $REPO"
-      gh api -X PATCH -H ${API_HEADER_FORMAT} -H ${API_HEADER_VERSION} "repos/$REPO/variables/$name" -f value="$value"
+      gh api -X PATCH -H ${API_HEADER_FORMAT} -H ${API_HEADER_VERSION} "repos/$REPO/actions/variables/$name" -f value="$value"
     }
   }
 
@@ -88,19 +77,19 @@ foreach ($REPO in $REPOS) {
   # Set or update FOLDER_SUFFIX variable
   try {
     Write-Output "Setting variable FOLDER_SUFFIX with value $FOLDER_SUFFIX in repository $REPO"
-    gh api -X POST -H ${API_HEADER_FORMAT} -H ${API_HEADER_VERSION} "repos/$REPO/variables" -f name="FOLDER_SUFFIX" -f value="$FOLDER_SUFFIX"
+    gh api -X POST -H ${API_HEADER_FORMAT} -H ${API_HEADER_VERSION} "repos/$REPO/actions/variables" -f name="FOLDER_SUFFIX" -f value="$FOLDER_SUFFIX"
   } catch {
     Write-Output "Updating variable FOLDER_SUFFIX with value $FOLDER_SUFFIX in repository $REPO"
-    gh api -X PATCH -H ${API_HEADER_FORMAT} -H ${API_HEADER_VERSION} "repos/$REPO/variables/FOLDER_SUFFIX" -f value="$FOLDER_SUFFIX"
+    gh api -X PATCH -H ${API_HEADER_FORMAT} -H ${API_HEADER_VERSION} "repos/$REPO/actions/variables/FOLDER_SUFFIX" -f value="$FOLDER_SUFFIX"
   }
 
   Write-Output ""
   # Verify access to the repository by listing the environments
     try {
         Write-Output "Verifying access to repository $REPO by listing the environments"
-        $environments = gh api -H ${API_HEADER_FORMAT} -H ${API_HEADER_VERSION} "/repos/$REPO/environments" | ConvertFrom-Json
+        $response = gh api -H ${API_HEADER_FORMAT} -H ${API_HEADER_VERSION} "/repos/$REPO/environments" | ConvertFrom-Json
         Write-Output "Environments in ${REPO}:"
-        $environments.environments | ForEach-Object { Write-Output "$($_.name)" }
+        $response.environments | ForEach-Object { Write-Output "$($_.name)" }
     } catch {
         Write-Output "Failed to access repository $REPO"
     }

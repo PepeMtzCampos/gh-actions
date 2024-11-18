@@ -6,16 +6,6 @@ $API_HEADER_FORMAT = "Accept: application/vnd.github+json"
 foreach ($REPO in $REPOS) {
 
   Write-Output ""
-  # Verify access to the repository by listing the workflow permissions
-    try {
-        Write-Output "Verifying access to repository $REPO by listing the workflow permissions"
-        
-        $permissions = gh api -H ${API_HEADER_FORMAT} -H ${API_HEADER_VERSION} "/repos/$REPO/actions/permissions/workflow" | ConvertFrom-Json
-        Write-Output "Workflow permissions in ${REPO}:"
-        $permissions | ForEach-Object { Write-Output "$($_.name): $($_.value)" }
-    } catch {
-        Write-Output "Failed to access workflow permissions in repository $REPO"
-    }
    # Check the permissions of the GitHub token
     try {
         Write-Output "Checking the permissions of the GitHub token"
