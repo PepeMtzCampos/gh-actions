@@ -42,6 +42,16 @@ $SECRETS = @{
 }
 
 foreach ($REPO in $REPOS) {
+
+  # Verify access to the repository by reading the last commit
+  try {
+      Write-Output "Verifying access to repository $REPO by reading the last commit"
+      $lastCommit = gh api "repos/$REPO/commits" | ConvertFrom-Json | Select-Object -First 1
+      Write-Output "Last commit in repository ${REPO}: $($lastCommit.commit.message)"
+  } catch {
+    Write-Output "Failed to access repository $REPO"
+  }
+
   # Extract FOLDER_SUFFIX from repository name
   $FOLDER_SUFFIX = $REPO -replace 'PepeMtzCampos/gh-', ''
 
